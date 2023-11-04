@@ -1,26 +1,49 @@
 package clientele
 
 import (
+	"encoding/json"
 	"github.com/mayuedong/server/api"
+	"regexp"
 	"time"
 )
 
-const (
-	_ENTER_ = '\n'
-)
-
 type Clientele struct {
-	weakServ        api.AnyWeakServiceClientele
-	weakBroadcaster api.AnyWeakBroadcaster
-	ip              string
+	weakServ        api.AnyWeakServiceClientele //断开连接
+	weakBroadcaster api.AnyWeakBroadcaster      //与广播者交互
 	loginTime       time.Time
-	logoutTime      time.Time
-	lastReadCache   []byte
 }
 
-// 钱包接口用于获取job
-// server接口用于断开矿机连接【无法登录时踢掉】
 func NewClientele(anyService api.AnyWeakServiceClientele, anyWallet api.AnyWeakBroadcaster) api.AnyClient {
-	r := &Clientele{weakServ: anyService, weakBroadcaster: anyWallet, lastReadCache: nil}
+	r := &Clientele{weakServ: anyService, weakBroadcaster: anyWallet}
 	return r
+}
+
+func (r *Clientele) CallbackLogin() {
+	r.loginTime = time.Now()
+}
+
+func (r *Clientele) CallbackLogout() {
+
+}
+
+func (r *Clientele) CallbackBroadcast(cli api.AnyWeakClient) {
+
+}
+
+// TODO 入参不能跨线程使用，多个client复用buf，不能引用
+var proxyProtocolRegexp = regexp.MustCompile("PROXY TCP\\d ((\\d+\\.){3}\\d+)")
+
+func (r *Clientele) CallbackRead(buf []byte, cli api.AnyWeakClient) (err error) {
+	event := &jsonEvent{}
+	if err = json.Unmarshal(buf, event); nil == err {
+		r.handlerMessage(cli, event)
+	}
+	return err
+}
+
+type jsonEvent struct {
+}
+
+func (r *Clientele) handlerMessage(cli api.AnyWeakClient, event *jsonEvent) {
+
 }

@@ -1,18 +1,26 @@
 package server
 
 import (
+	"github.com/mayuedong/server/api"
 	"github.com/mayuedong/unit"
 	"golang.org/x/sys/unix"
 	"io"
-	"github.com/mayuedong/server/api"
 )
 
 type Client struct {
 	nfd       int
 	posWorker int
-	addr      *unix.SockaddrInet4
 	api.AnyClient
+	ip         string
+	readCache  []byte
 	writeCache unit.List[*[]byte]
+}
+
+func (r *Client) Fd() int {
+	return r.nfd
+}
+func (r *Client) Ip() string {
+	return r.ip
 }
 
 // TODO 做成接口，只能消费事件的线程调用，不能跨线程

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/mayuedong/unit"
 	"golang.org/x/sys/unix"
+	"sync"
 	"sync/atomic"
 )
 
@@ -14,6 +15,7 @@ type eventLoop struct {
 	efd            int
 	numWorker      int
 	running        atomic.Bool
+	onceClose      sync.Once
 	producerEvents []unix.EpollEvent
 	eventWorkers   []*eventWorker
 }
@@ -49,17 +51,17 @@ func newEventLoop(threads int) (r *eventLoop, err error) {
 
 // main call
 func (r *eventLoop) close() {
-	if !r.running.Load() {
-		return
-	}
-	r.running.Store(false)
-	//关闭线程池
-	for i := 0; i < len(r.eventWorkers); i++ {
-		r.eventWorkers[i].close()
-	}
-	//关闭EPOLL
-	unix.Close(r.efd)
-	unit.Info("EventLoop closed")
+	r.onceClose.Do(func() {
+		r.running.Store(false)
+		//关闭线程池
+		for i := 0; i < len(r.eventWorkers); i++ {
+			r.eventWorkers[i].close()
+		}
+		//关闭EPOLL
+		unix.Close(r.efd)
+		unit.Info("EventLoop closed")
+	})
+
 }
 
 // epoll 生产者

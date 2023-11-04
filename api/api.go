@@ -1,13 +1,15 @@
 package api
 
 type AnyClient interface {
-	CallbackRead([]byte, AnyWeakClient)
+	CallbackRead([]byte, AnyWeakClient) error
 	CallbackBroadcast(AnyWeakClient)
 	CallbackLogin()
 	CallbackLogout()
 }
 type AnyWeakClient interface {
 	Write([]byte)
+	Fd() int
+	Ip() string
 }
 
 type AnyWeakServiceClientele interface {
